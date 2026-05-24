@@ -1,44 +1,39 @@
-import CompressionControls from '../components/CompressionControls.jsx';
+import DctControls from '../components/DctControls.jsx';
 import PageNav from '../components/PageNav.jsx';
 import PreviewPanel from '../components/PreviewPanel.jsx';
-import { useImageCompressor } from '../hooks/useImageCompressor.js';
+import { useManualDctCompressor } from '../hooks/useManualDctCompressor.js';
 
-export default function CompressorPage() {
+export default function ManualDctPage() {
   const {
     imageFile,
-    quality,
-    compressedQuality,
     sourcePreviewUrl,
-    compressedBlob,
-    compressedPreviewUrl,
+    result,
+    resultPreviewUrl,
     isCompressing,
     error,
     downloadInfo,
     setImageFile,
-    setQuality,
-    beginQualityChange,
-    commitQualityChange,
     clearImage,
-  } = useImageCompressor();
+  } = useManualDctCompressor();
 
   return (
     <main className="app-shell">
       <header className="app-header">
         <div>
           <p className="app-kicker">DCT JPEG Studio</p>
-          <h1>JPEG 压缩工作台</h1>
+          <h1>手写 DCT 压缩</h1>
         </div>
         <div className="header-actions">
-          <PageNav activePage="jpeg" />
+          <PageNav activePage="dct" />
           <div className="header-status">
-            <span>本地处理</span>
-            <strong>JPG</strong>
+            <span>手写核心</span>
+            <strong>Q50</strong>
           </div>
         </div>
       </header>
 
       <div className="workspace">
-        <section className="preview-grid" aria-label="图片预览">
+        <section className="preview-grid" aria-label="DCT 图片预览">
           <PreviewPanel
             title="原图"
             badge="Source"
@@ -46,24 +41,20 @@ export default function CompressorPage() {
             size={imageFile?.size}
           />
           <PreviewPanel
-            title="压缩后"
-            badge={`Quality ${compressedQuality ?? quality}`}
-            imageUrl={compressedPreviewUrl}
-            size={compressedBlob?.size}
+            title="DCT 重建"
+            badge="8x8 DCT"
+            imageUrl={resultPreviewUrl}
+            size={result?.blob.size}
             isLoading={isCompressing}
           />
         </section>
 
-        <CompressionControls
+        <DctControls
           imageFile={imageFile}
-          quality={quality}
-          compressedBlob={compressedBlob}
+          result={result}
           downloadInfo={downloadInfo}
           isCompressing={isCompressing}
           error={error}
-          onQualityChange={setQuality}
-          onQualityChangeStart={beginQualityChange}
-          onQualityChangeCommit={commitQualityChange}
           onFileSelect={setImageFile}
           onClear={clearImage}
         />
