@@ -9,6 +9,8 @@ export default function CompressionControls({
   isCompressing,
   error,
   onQualityChange,
+  onQualityChangeStart,
+  onQualityChangeCommit,
   onFileSelect,
   onClear,
 }) {
@@ -37,6 +39,13 @@ export default function CompressionControls({
           max="100"
           value={quality}
           onChange={(event) => onQualityChange(Number(event.target.value))}
+          onPointerDown={onQualityChangeStart}
+          onPointerUp={(event) => onQualityChangeCommit(Number(event.currentTarget.value))}
+          onPointerCancel={(event) =>
+            onQualityChangeCommit(Number(event.currentTarget.value))
+          }
+          onKeyUp={(event) => onQualityChangeCommit(Number(event.currentTarget.value))}
+          onBlur={(event) => onQualityChangeCommit(Number(event.currentTarget.value))}
         />
 
         <div className="quality-scale" aria-hidden="true">

@@ -5,9 +5,23 @@ import {
   getSavingsPercent,
 } from '../utils/imageCompression.js';
 
+const DEFAULT_QUALITY = 76;
+
+function normalizeSliderQuality(value) {
+  const numericValue = Number(value);
+  if (Number.isNaN(numericValue)) {
+    return DEFAULT_QUALITY;
+  }
+
+  return Math.min(100, Math.max(1, Math.round(numericValue)));
+}
+
 export function useImageCompressor() {
   const [imageFile, setImageFileState] = useState(null);
-  const [quality, setQuality] = useState(76);
+  const [quality, setQualityState] = useState(DEFAULT_QUALITY);
+  const [targetQuality, setTargetQuality] = useState(DEFAULT_QUALITY);
+  const [compressedQuality, setCompressedQuality] = useState(null);
+  const [isAdjustingQuality, setIsAdjustingQuality] = useState(false);
   const [sourcePreviewUrl, setSourcePreviewUrl] = useState('');
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [compressedPreviewUrl, setCompressedPreviewUrl] = useState('');
@@ -26,6 +40,7 @@ export function useImageCompressor() {
 
     setError('');
     setCompressedBlob(null);
+    setCompressedQuality(null);
     setImageFileState(file);
   }, []);
 
@@ -33,7 +48,27 @@ export function useImageCompressor() {
     setError('');
     setImageFileState(null);
     setCompressedBlob(null);
+    setCompressedQuality(null);
   }, []);
+
+  const setQuality = useCallback((nextQuality) => {
+    setQualityState(normalizeSliderQuality(nextQuality));
+  }, []);
+
+  const beginQualityChange = useCallback(() => {
+    setIsAdjustingQuality(true);
+  }, []);
+
+  const commitQualityChange = useCallback(
+    (nextQuality = quality) => {
+      const normalizedQuality = normalizeSliderQuality(nextQuality);
+
+      setQualityState(normalizedQuality);
+      setTargetQuality(normalizedQuality);
+      setIsAdjustingQuality(false);
+    },
+    [quality],
+  );
 
   useEffect(() => {
     if (!imageFile) {
@@ -50,8 +85,23 @@ export function useImageCompressor() {
   }, [imageFile]);
 
   useEffect(() => {
+    if (isAdjustingQuality) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTargetQuality(quality);
+    }, 320);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isAdjustingQuality, quality]);
+
+  useEffect(() => {
     if (!imageFile) {
       setCompressedBlob(null);
+      setCompressedQuality(null);
       setIsCompressing(false);
       return undefined;
     }
@@ -61,15 +111,17 @@ export function useImageCompressor() {
       try {
         setIsCompressing(true);
         setError('');
-        const blob = await compressImageToJpeg(imageFile, quality);
+        const blob = await compressImageToJpeg(imageFile, targetQuality);
 
         if (isCurrent) {
           setCompressedBlob(blob);
+          setCompressedQuality(targetQuality);
         }
       } catch (compressionError) {
         if (isCurrent) {
           setError(compressionError.message || '压缩失败');
           setCompressedBlob(null);
+          setCompressedQuality(null);
         }
       } finally {
         if (isCurrent) {
@@ -82,7 +134,7 @@ export function useImageCompressor() {
       isCurrent = false;
       window.clearTimeout(timeoutId);
     };
-  }, [imageFile, quality]);
+  }, [imageFile, targetQuality]);
 
   useEffect(() => {
     if (!compressedBlob) {
@@ -99,21 +151,22 @@ export function useImageCompressor() {
   }, [compressedBlob]);
 
   const downloadInfo = useMemo(() => {
-    if (!imageFile || !compressedBlob) {
+    if (!imageFile || !compressedBlob || compressedQuality !== quality) {
       return null;
     }
 
     return {
       href: compressedPreviewUrl,
-      name: getDownloadName(imageFile.name, quality),
+      name: getDownloadName(imageFile.name, compressedQuality),
       size: compressedBlob.size,
       savings: getSavingsPercent(imageFile.size, compressedBlob.size),
     };
-  }, [compressedBlob, compressedPreviewUrl, imageFile, quality]);
+  }, [compressedBlob, compressedPreviewUrl, compressedQuality, imageFile, quality]);
 
   return {
     imageFile,
     quality,
+    compressedQuality,
     sourcePreviewUrl,
     compressedBlob,
     compressedPreviewUrl,
@@ -122,6 +175,8 @@ export function useImageCompressor() {
     downloadInfo,
     setImageFile,
     setQuality,
+    beginQualityChange,
+    commitQualityChange,
     clearImage,
   };
 }

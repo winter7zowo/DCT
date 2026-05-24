@@ -6,6 +6,7 @@ export default function CompressorPage() {
   const {
     imageFile,
     quality,
+    compressedQuality,
     sourcePreviewUrl,
     compressedBlob,
     compressedPreviewUrl,
@@ -14,6 +15,8 @@ export default function CompressorPage() {
     downloadInfo,
     setImageFile,
     setQuality,
+    beginQualityChange,
+    commitQualityChange,
     clearImage,
   } = useImageCompressor();
 
@@ -40,7 +43,7 @@ export default function CompressorPage() {
           />
           <PreviewPanel
             title="压缩后"
-            badge={`Quality ${quality}`}
+            badge={`Quality ${compressedQuality ?? quality}`}
             imageUrl={compressedPreviewUrl}
             size={compressedBlob?.size}
             isLoading={isCompressing}
@@ -55,6 +58,8 @@ export default function CompressorPage() {
           isCompressing={isCompressing}
           error={error}
           onQualityChange={setQuality}
+          onQualityChangeStart={beginQualityChange}
+          onQualityChangeCommit={commitQualityChange}
           onFileSelect={setImageFile}
           onClear={clearImage}
         />
